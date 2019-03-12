@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd">
+<mapper namespace="com.rg1803.dao.LoginMapper">
+	<select id="login" resultType="User">
+		select * from t_user where username=#{username} and password=#{password}
+	</select>
+	<update id="agree" parameterType="integer" >
+		update t_user set state=1 where id=#{id}
+	</update>
+</mapper>

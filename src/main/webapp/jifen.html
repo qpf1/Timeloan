@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap-table.css" rel="stylesheet">
+<script type="text/javascript" src="./static/js/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap-table.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script type="text/javascript" src="./static/js/common.js"></script>
+<script type="text/javascript">
+
+function queryParams(params) {  //配置参数
+    var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+    	pageNumber: params.pageNumber-1, //页面大小
+    	pageSize: params.pageSize, //页码
+    	name:$("#name").val(),
+    	idcard :$("#idcard").val(),
+    	sel:$("#sel").val()
+    };
+    return temp;
+}
+function getLoanHuanList(){
+	$('#table').bootstrapTable({
+		url:'./jifenlist.action',// 请求后台的路径
+		method: 'post',//请求方式
+		contentType: "application/x-www-form-urlencoded",
+		pagination: true,//是否分页
+		toolbar: '#toolbar',//工具按钮用哪个容器
+	    sidePagination: "server", //表示服务端请求
+		pagination: true,//是否分页
+		queryParamsType : "",
+		pageNumber: 1,//当前页
+		pageSize: 5,//每页多少
+		queryParams: queryParams,
+	    columns: [ {
+	        field: 'id',
+	        title: '编号',
+	        align:'center'
+	    }, {
+	        field: 'realname',
+	        title: '姓名',
+	        align:'center'
+	    },  {
+	        field: 'loanCode',
+	        title: '贷款流水号',
+	        align:'center'
+	    }, {
+	        field: 'allsum',
+	        title: '本息',
+	        align:'center'
+	    },{
+	        field: 'repaystate',
+	        title: '还款状态',
+	        align:'center',
+	        formatter:function(value,row,index){
+	        	var repaystate = row.repaystate
+	        	var ss= "";
+	        	if(repaystate==0){
+	        		ss="未还款"
+	        	}else if(repaystate ==1){
+	        		ss="未还清"
+	        	}else if(repaystate ==2){
+	        		ss="已还清"
+	        	}else if(repaystate ==3){
+	        		ss="已逾期"
+	        	}
+	        	return ss;
+	        }
+	    },{
+	        field: 'integral',
+	        title: '积分',
+	        align:'center'
+	    }]
+	});
+}
+$(function(){
+	getLoanHuanList();
+})
+
+function mohu(){
+	$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+    	pageSize:5, //页码
+    	name:$("#name").val(),
+    	idcard:$("#idcard").val()})
+}
+
+function qingkong(){
+	$("#name").val("");
+	$("#idcard").val("");
+	$("#sel").val("");
+	$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+    	pageSize:5, //页码
+    	name:$("#name").val(),
+    	idcard:$("#idcard").val()})
+}
+
+</script>
+</head>
+<body>
+<ol class="breadcrumb">
+    <li class="active">积分模块</li>
+    <li class="active">信誉积分</li>
+</ol>
+<div class="panel panel-default">
+   <div class="panel-heading">搜索</div>
+    <div class="panel-body">
+        <form role="form" class="form-inline">
+            <div class="form-group">
+                <label for="name">贷款人：</label>
+                <input type="text" class="form-control" id="name" placeholder="请输入姓名" autocomplete="off">&nbsp;&nbsp;&nbsp;&nbsp;
+                <label class="control-label">还款状态：</label>
+                <label for="name">审批状态：</label>
+                <select class="form-control" id="sel">
+                	<option value="">-请选择-</option>
+                	<option value="0">-未还款-</option>
+                	<option value="1">-未还清-</option>
+                	<option value="2">-已还清-</option>
+                	<option value="3">-已逾期-</option>
+                </select>
+            </div>
+            
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <div class="form-group">
+                <input type="button" class="btn btn-success" onclick="mohu()" value="搜索">
+                <input type="button" class="btn btn-default" onclick="qingkong()" value="清空">
+            </div>
+        </form>
+    </div>
+</div>
+<div class="table-responsive">
+	<table id="table" data-row-style="rowStyle"></table>
+</div>
+</body>
+</html>

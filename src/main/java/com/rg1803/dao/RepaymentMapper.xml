@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd">
+<mapper namespace="com.rg1803.dao.RepaymentMapper">
+
+	<select id="showRepay" parameterType="UserVo" resultType="AllLoan">
+		SELECT
+			t.id,
+			t2.realname,
+			t2.idcard,
+			t.loanCode,
+			t.loanSum,
+			t.loanStartDate,
+			t.loanEndDate,
+			t.loanRate,
+			t.loanDay,
+			t3.type,
+			t.loanstate,
+			t1.state,
+			t2.isemp,
+			t4.allsum,
+			t4.repaystate 
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+			LEFT JOIN t_repayment t4 ON t4.lid = t.id 
+		<where>
+			t.loanstate = 2 AND t1.state =2
+			<if test="user.isemp==null">
+				and t2.id =#{user.id}
+			</if>
+			<if test="name!=null and !''.equals(name)">
+				and  t2.realname like '%${name}%'
+			</if>
+			<if test="idcard!=null and !''.equals(idcard)">
+				and  t2.idcard like '%${idcard}%'
+			</if>
+		</where>
+			limit ${pageNumber*pageSize},${pageSize}
+	</select>
+	<select id="selcount" parameterType="UserVo" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+			LEFT JOIN t_repayment t4 ON t4.lid = t.id 
+		<where>
+			t.loanstate = 2 AND t1.state =2
+			<if test="user.isemp==null">
+				and t2.id =#{user.id}
+			</if>
+			<if test="name!=null and !''.equals(name)">
+				and  t2.realname like '%${name}%'
+			</if>
+			<if test="idcard!=null and !''.equals(idcard)">
+				and  t2.idcard like '%${idcard}%'
+			</if>
+		</where>
+	</select>
+	<select id="selrep" parameterType="Loan" resultType="Repayment">
+		select * from t_repayment where lid=#{id}
+	</select>
+	<update id="updateLoanstate" parameterType="Loan">
+		update  t_repayment set repaymoney=#{allsum},repaystate=2 where lid=#{id}
+	</update>
+	<select id="showloan" parameterType="User" resultType="AllLoan">
+		SELECT
+			t.id,
+			t2.realname,
+			t2.idcard,
+			t.id,
+			t.loanSum,
+			t.loanRate,
+			t4.repaymoney,
+			t4.repaystate,
+			t4.allsum,
+			t.loanDay
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+			LEFT JOIN t_repayment t4 ON t4.lid = t.id 
+			where t.loanstate=2 and t1.state=2 and t2.id=#{id}
+	</select>
+	
+	<update id="weihuanqing" parameterType="Repayment">
+		update t_repayment set repaymoney=#{repaymoney},repaystate=1 where lid=#{lid}
+	</update>
+	<update id="huanqing" parameterType="Repayment">
+		update t_repayment set repaymoney=#{repaymoney},repaystate=2 where lid=#{lid}
+	</update>
+	<select id="seljifen" parameterType="URate" resultType="URate">
+		select * from t_user_rate where uid=#{uid}
+	</select>
+	<update id="addjifen" parameterType="URate">
+		update t_user_rate set integral=#{integral} where uid=#{uid}
+	</update>
+	<update id="updateloanRate" parameterType="URate">
+		update t_user_rate set loanRate=#{loanRate} where uid=#{uid}
+	</update>
+	
+	<update id="updatestate" parameterType="AllLoan">
+		update t_repayment set repaystate=#{repaystate} where lid=#{id}
+	</update>
+</mapper>

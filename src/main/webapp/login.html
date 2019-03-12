@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link href="./css/style.css" rel='stylesheet' type='text/css'/>
+<link href="./static/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet">
+<script type="text/javascript" src="./static/js/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script type="text/javascript">
+	function login(){
+		var username=$("[name='username']").val();
+		var password=$("[name='password']").val();
+		// 先验证登录用户名称是否正确，同时验证在这个登录之前是够同意了协议，如果没用同意协议弹出协议的模态框需要同意协议
+		$.ajax({
+			url:"./login.action",
+			type:"post",
+			data:{
+				username:username,
+				password:password
+			},
+			dataType:"json",
+			success:function(data){
+				if(data.bo){
+					var state = data.user.state;
+					var isemp = data.user.isemp;
+					if(isemp==null){// 不为本公司员工
+						if(state==0){// 还没有同意协议的用户
+							$('#myModal').modal({
+								backdrop:"static"		
+							});
+						}else{
+							window.location.href="index.html";
+						}
+					}else{// 为本公司员工
+						window.location.href="index.html";
+					}
+				}else{
+					alert("账号或密码错误");
+				}
+			}
+		})
+	}
+	function agree(){
+		var username=$("[name='username']").val();
+		var password=$("[name='password']").val();
+		$.ajax({
+			url:"./agree.action",
+			type:"post",
+			data:{
+				username:username,
+				password:password
+			},
+			dataType:"json",
+			success:function(data){
+				if(data){
+					window.location.href="index.html";					
+				}
+			}
+		})
+	}
+</script>
+</head>
+<body>
+<div class="login">
+	<h2>time理财</h2>
+	<div class="login-top">
+		<h1>欢迎登陆</h1>
+		<form>
+			<input type="text" placeholder="用户名称"  name="username" autocomplete="off"/>
+			<input type="password" placeholder="用户密码"  name="password" autocomplete="off"/>
+		    <div class="forgot">
+	    		<input type="button" value="Login" onclick='login()' />
+		    </div>
+	    </form>
+	</div>
+</div>
+<!-- 模态框（Modal） -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">
+					使用须知
+				</h4>
+			</div>
+			<div class="modal-body">
+				1、甲方同意将所持有的xx有限公司60%的股权转让给乙方。<br/>
+			　	2、乙方同意受让甲方所持有的xx有限公司 60%的股权。<br/>
+			　	3、甲乙双方董事会已就股权转让事宜进行审议并已作出相关决议。<br/>
+			　	4、xx有限公司董事会就股权转让事宜召开董事会，并就同意本次股权转让以及原股东放弃股权转让优先认购权等相关事宜形成董事会决议。<br/>
+			　	5、甲乙双方均充分理解在本次股权转让过程中各自的权利义务，并均同意依法进行本次股权转让。<br/>
+			　	甲乙双方根据中华人民共和国有关的法律、法规的规定，经友好协商，本着平等互利的原则，现签定本股权转让协议，以资双方共同遵守：<br/>
+			　	第一条：协议双方<br/>
+			　	2.1 本协议签订地为：<br/>
+			　	第三条：转让标的及价款<br/>
+			　	3.1 甲方将其持有的xx有限公司60%的股权转让给乙方。<br/>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">不同意
+				</button>
+				<button type="button" class="btn btn-primary" onclick="agree()">
+					同意
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>

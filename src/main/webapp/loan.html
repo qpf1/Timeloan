@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap-table.css" rel="stylesheet">
+<script type="text/javascript" src="./static/js/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap-table.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script type="text/javascript" src="./static/js/common.js"></script>
+<script type="text/javascript" src="static/js/jquery.validate.js"></script>
+<script type="text/javascript">
+function queryParams(params) {  //配置参数
+    var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+    	pageNumber: params.pageNumber-1, //页面大小
+    	pageSize: params.pageSize, //页码
+    	name:$("#name").val(),
+    	idcard :$("#idcard").val(),
+		sel:$("#sel").val()
+    };
+    return temp;
+}
+function getLoanList(){
+	$('#table').bootstrapTable({
+		url:'./showLoan.action',// 请求后台的路径
+		method: 'post',//请求方式
+		contentType: "application/x-www-form-urlencoded",
+		pagination: true,//是否分页
+		toolbar: '#toolbar',//工具按钮用哪个容器
+	    sidePagination: "server", //表示服务端请求
+		pagination: true,//是否分页
+		queryParamsType : "",
+		pageNumber: 1,//当前页
+		pageSize: 5,//每页多少
+		queryParams: queryParams,
+	    columns: [ {
+	        field: 'id',
+	        title: '编号',
+	        align:'center'
+	    }, {
+	        field: 'realname',
+	        title: '姓名',
+	        align:'center'
+	    }, {
+	        field: 'idcard',
+	        title: '身份证号',
+	        align:'center'
+	    }, {
+	        field: 'loanCode',
+	        title: '贷款流水号',
+	        align:'center'
+	    }, {
+	        field: 'loanSum',
+	        title: '贷款金额',
+	        align:'center'
+	    }, {
+	        field: 'loanData',
+	        title: '发起日期',
+	        align:'center'
+	    },{
+	        field: 'loanStartData',
+	        title: '贷款开始日期',
+	        align:'center'
+	    },{
+	        field: 'loanEndData',
+	        title: '还款日期',
+	        align:'center'
+	    },{
+	        field: 'loanRate',
+	        title: '利率',
+	        align:'center'
+	    },{
+	        field: 'loanDay',
+	        title: '贷款周期',
+	        align:'center'
+	    },{
+	        field: 'type',
+	        title: '贷款类型',
+	        align:'center'
+	    },{
+	        field: 'state',
+	        title: '审批状态',
+	        align:'center',
+	        formatter:function(value,row,index){
+	        	var issp=row.loanstate;
+	        	var id=row.id;
+	        	var ss="";
+	        	if(value==0){
+        			if(issp==0){
+		        		$.ajax({
+		        			url:'./cheackemp.action',
+		        			type:"post",
+		        			dataType:"json",
+		        			async:false,
+		        			success:function(data){
+		        				if(data){
+					        		ss="<button class='btn-success' onclick='sp("+id+")'>审批</button>";
+		        				}else{
+		        					ss="未审批";
+		        				}
+		        			}
+		        		})
+	        		}else if(issp==1){
+	        			$.ajax({
+	        				url:'./cheacklevel.action',
+	        				type:"post",
+	        				data:{
+	        					id:id
+	        				},
+	        				dataType:"json",
+	        				async:false,
+	        				success:function(data){
+	        					if(data){
+	        						ss="<button class='btn-success' onclick='sp("+id+")'>审批</button>";
+	        					}else{
+					        		ss="审批中";	        						
+	        					}
+	        				}
+	        			})
+	        		}
+	        	}else if(value==2){
+	        		ss="审批通过";
+	        	}else if(value==3){
+	        		ss="审批未通过";
+	        	}
+	        	return ss;
+	        }
+	    },{
+	        field: 'id',
+	        title: '操作',
+		    align:'center',
+	        formatter:function(value,row,index){
+	        	var ss = "<button class='btn btn-default glyphicon glyphicon-wrench' onclick='update("+row.id+")'></button>&nbsp;&nbsp;"
+	        			+"<button class='btn btn-danger glyphicon glyphicon-remove' onclick='del("+row.id+")'></button>";
+	        	return ss;
+	        }
+	    }]
+	});
+}
+function del(id){
+	$.ajax({
+		url:'./delLoan.action',
+		type:"post",
+		data:{
+			id:id
+		},
+		dataType:"json",
+		success:function(data){
+			if(data.bo){
+				$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+			    	pageSize:5, //页码
+			    	name:$("#name").val(),
+			    	idcard:$("#idcard").val(),
+					sel:$("#sel").val()})
+			}else{
+				if(data.cn==1){
+					alert("权限不足不能删除用户的贷款信息")
+				}
+				if(data.cn==2){
+					alert("您申请的贷款已经开始审批了，无法删除");				
+				}
+				if(data.cn==3){
+					alert("该贷款已经审批完成，无法删除请按时还款");					
+				}
+			}
+		}
+	})
+}
+function agree(agree){
+	var agree=agree;
+	var id=$("#id").val();
+	var nowcode=$("#nowcode").val();
+	var option=$("#option").val();
+	$.ajax({
+		url:"SpLoanTask",
+		data:{
+			agree:agree,
+			id:id,
+			nowcode:nowcode,
+			option:option
+		},
+		type:"post",
+		dataType:"json",
+		success:function(data){
+			
+		}
+	})
+}
+function sp(id){
+	var id=id;
+	$.ajax({
+		url:"./queryLoanTask.action",
+		data:{id:id},
+		type:"post",
+		dataType:"json",
+		success:function(data){
+			if(data.bo){
+				$('#sploan').modal({
+					backdrop:"static"		
+				});
+				$("#loanid").val(data.loan.id);
+				$("#loancode").val(data.loan.loanCode);
+				$("#loanname").val(data.user.realname);
+				$("#loantype").val(data.loan.loantype);
+				$("#loandate").val(data.loan.loansubmitDate);
+				$("#loanmoney").val(data.loan.loanSum);
+				$("#loanrate").val(data.loan.loanRate);
+				$("#loanday").val(data.loan.loanDay);
+			}else{
+				alert("当前贷款您没有权限审批");
+			}
+		}
+	})
+}
+function update(id){
+	$.ajax({
+		url:'./updateLoan.action',
+		data:{
+			id:id
+		},
+		type:"post",
+		dataType:"json",
+		success:function(data){
+			if(data.bo){
+				$('#updateloan').modal({
+					backdrop:"static"		
+				});
+				$("#updateloan_username").val(data.user.realname);
+				$("#updateuser_card").val(data.user.idcard);
+				$("#updateloan_money").val(data.loan.loanSum);
+				$("#updateinterest_rate").val(data.loan.loanRate);
+				$("#updateloan_type").val(data.loan.loantype);
+				$("#updateloan_time").val(data.loan.loanDay);
+				validformLoan();
+			}else{
+				if(data.cn==1){
+					alert("权限不足不能修改用户的贷款信息")
+				}
+				if(data.cn==2){
+					alert("您的贷款已经开始审批了，无法修改，请耐心等待");					
+				}
+				if(data.cn==3){
+					alert("该贷款已经审批完成，无法修改请按时还款");					
+				}
+			}
+		}
+	})
+}
+function updateLoan(){
+	if(validformLoan().form()){
+		$.ajax({
+			url:'./updateStart.action',
+			data:{
+				loanSum:$("#updateloan_money").val(),
+				loantype:$("#updateloan_type").val(),
+				loanDay:$("#updateloan_time").val()
+			},
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data){
+					$("#updateloan").modal('hide');
+					$('#table').bootstrapTable('refresh',{
+				    	name:$("#name").val(),
+				    	idcard:$("#idcard").val(),
+						sel:$("#sel").val()})
+				}
+			}
+		})
+	}
+}
+function startLoan(){	
+	$.ajax({
+		url:"./startLoan.action",
+		type:"post",
+		dataType:"json",
+		success:function(data){
+			if(data.bo){
+				$('#startloan').modal({
+					backdrop:"static"		
+				});
+				$("#loan_username").val(data.user.realname);
+				$("#user_card").val(data.user.idcard);
+				$("#interest_rate").val(data.loanRate);
+				validform();
+			}else{
+				if(data.cn ==1){
+					alert("请让贷款人自己申请贷款");
+				}
+				if(data.cn ==2){
+					alert("您已申请过贷款请耐心等待审核结果");
+				}
+				if(data.cn ==3){
+					alert("您还有贷款未还清，请还清贷款后在申请贷款");
+				}
+				if(data.cn ==4){
+					alert("您的信誉积分低于60分，不能发起贷款");
+				}
+			}
+		}
+	})
+}
+$(function(){
+	getLoanList();
+})
+
+function mohu(){
+	$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+    	pageSize:5, //页码
+    	name:$("#name").val(),
+    	idcard:$("#idcard").val(),
+		sel:$("#sel").val()})
+}
+
+function qingkong(){
+	$("#name").val("");
+	$("#idcard").val("");
+	$("#sel").val("");
+	$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+    	pageSize:5, //页码
+    	name:$("#name").val(),
+    	idcard:$("#idcard").val(),
+		sel:$("#sel").val()})
+}
+
+	function lauch(){
+		if(validform().form()){
+			$.ajax({
+				url:'./lauchLoan.action',
+				data:{
+					loanSum:$("#loan_money").val(),
+					loanRate:$("#interest_rate").val(),
+					loanDay:$("#loan_time").val(),
+					loantype:$("#loan_type").val()
+				},
+				type:"post",
+				dataType:"json",
+				success:function(data){
+					if(data){
+						$("#startloan").modal('hide');
+						$('#table').bootstrapTable('refresh',{
+					    	name:$("#name").val(),
+					    	idcard:$("#idcard").val(),
+							sel:$("#sel").val()})
+					}
+				}
+			})
+		}
+	}
+	
+	function validform(){
+		//验证输入金额
+		   jQuery.validator.addMethod("ismoney", function (value, element) {
+		     var money = $("#loan_money").val();
+		     var pattern = /^\d+(\.\d{1,2})?$/;
+		     return pattern.test(money);
+		    }, "请输入正确的贷款金额");
+		//验证输入金额
+		   jQuery.validator.addMethod("isday", function (value, element) {
+		     var time = $("#loan_time").val();
+		     var pattern = /^[0-9]*[1-9][0-9]*$/;
+		     return pattern.test(time);
+		    }, "请输入正确的天数");
+		
+		return $("#myfrom").validate({
+			isnore:"",
+			rules:{
+				loan_money:{
+					ismoney:true,
+					required:true
+				},
+				loan_type:"required",
+				loan_time:{
+					isday:true,
+					required:true
+				}
+			},
+			messages:{
+				loan_money:{
+					ismoney:"请输入正确的金额",
+	                required:"必填"
+	            },
+	            loan_type:"贷款类型必选",
+	            loan_time:{
+	            	isday:"请输入正确的天数",
+	                required:"必填"
+	            }
+			}
+		})
+	}
+	
+	function validformLoan(){
+		//验证输入金额
+		   jQuery.validator.addMethod("ismoney", function (value, element) {
+		     var money = $("#updateloan_money").val();
+		     var pattern = /^\d+(\.\d{1,2})?$/;
+		     return pattern.test(money);
+		    }, "请输入正确的贷款金额");
+		//验证输入金额
+		   jQuery.validator.addMethod("isday", function (value, element) {
+		     var time = $("#updateloan_time").val();
+		     var pattern = /^[0-9]*[1-9][0-9]*$/;
+		     return pattern.test(time);
+		    }, "请输入正确的天数");
+		
+		return $("#yourfrom").validate({
+			isnore:"",
+			rules:{
+				updateloan_money:{
+					ismoney:true,
+					required:true
+				},
+				updateloan_type:"required",
+				updateloan_time:{
+					isday:true,
+					required:true
+				}
+			},
+			messages:{
+				updateloan_money:{
+					ismoney:"请输入正确的金额",
+	                required:"必填"
+	            },
+	            updateloan_type:"贷款类型必选",
+	            updateloan_time:{
+	            	isday:"请输入正确的天数",
+	                required:"必填"
+	            }
+			}
+		})
+	}
+	
+	function spagree(v){
+		if(v==1){
+			$.ajax({
+				url:'./spagree.action',
+				type:"post",
+				data:{
+					id:$("#loanid").val(),
+					option:$("#opinion").val()
+				},
+				dataType:"json",
+				success:function(data){
+					if(data){
+						$("#sploan").modal('hide');
+						$('#table').bootstrapTable('refresh',{
+					    	name:$("#name").val(),
+					    	idcard:$("#idcard").val(),
+							sel:$("#sel").val()})
+						$("#opinion").val("");
+					}
+				}
+			})
+		}else if(v==0){
+			$.ajax({
+				url:'./refuse.action',
+				type:"post",
+				data:{
+					id:$("#loanid").val(),
+					option:$("#opinion").val()
+				},
+				dataType:"json",
+				success:function(data){
+					if(data){
+						$("#sploan").modal('hide');
+						$('#table').bootstrapTable('refresh',{
+					    	name:$("#name").val(),
+					    	idcard:$("#idcard").val(),
+							sel:$("#sel").val()})
+						$("#opinion").val("");
+					}
+				}
+			})
+		}
+	}
+</script>
+</head>
+<body>
+<ol class="breadcrumb">
+    <li class="active">贷款模块</li>
+    <li class="active">贷款审批流</li>
+</ol>
+<div class="panel panel-default">
+   <div class="panel-heading">搜索</div>
+    <div class="panel-body">
+        <form role="form" class="form-inline">
+            <div class="form-group">
+                <label for="name">贷款人姓名：</label>
+                <input type="text" class="form-control" id="name" placeholder="请输入姓名" autocomplete="off">&nbsp;&nbsp;&nbsp;&nbsp;
+                <label class="control-label">贷款人身份证号：</label>
+                <input type="text" class="form-control" id="idcard" placeholder="请输入身份证号" autocomplete="off">&nbsp;&nbsp;&nbsp;&nbsp;
+                <label for="name">审批状态：</label>
+                <select class="form-control" id="sel">
+                	<option value="">-请选择-</option>
+                	<option value="0">-未审批-</option>
+                	<option value="1">-审批中-</option>
+                	<option value="2">-审批通过-</option>
+                	<option value="3">-审批未通过-</option>
+                </select>
+            </div>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <div class="form-group">
+                <input type="button" class="btn btn-success" onclick="mohu()" value="搜索">
+                <input type="button" class="btn btn-default" onclick="qingkong()" value="清空">
+            </div>
+        </form>
+    </div>
+</div>
+<div class="table-responsive">
+	<div id="toolbar">
+		<button type="button" class="btn btn-info" id="user_add_modal_btn" onclick="startLoan()">发起贷款</button>
+	</div>	
+	<table id="table" data-row-style="rowStyle"></table>
+</div>
+<!-- 模态框start -->
+<div class="modal fade" id="sploan" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">贷款审批</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" >
+					<div class="form-group">
+						<label class="col-sm-2 control-label">编号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loanid" readonly > 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">流水号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loancode" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款人</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanname" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款类型</label>
+						<div class="col-sm-6">
+							<select class="form-control" id="loantype" disabled="disabled">
+			                    <option>--请选择--</option>
+			                    <option value="1">医疗</option>
+			                    <option value="2">日常消费</option>
+			                    <option value="3">房贷</option>
+			                    <option value="4">其他</option>
+			                </select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">发起日期</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loandate" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款金额(元)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanmoney" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">利率</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanrate" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款周期(天)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanday" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">审批意见</label>
+						<div class="col-sm-6">
+							<textarea class="form-control" id="opinion"></textarea>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal" onclick="spagree(0)">不同意</button>
+				<button type="button" class="btn btn-primary" onclick="spagree(1)">同意</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+
+<!-- 模态框start -->
+<div class="modal fade" id="startloan" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">发起贷款</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="myfrom">
+					<div class="form-group">
+						<label class="col-sm-2 control-label">姓名</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loan_username" disabled="disabled"> 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">身份证号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="user_card"  disabled="disabled"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款金额(元)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loan_money" name="loan_money"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">利率(%)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="interest_rate"  disabled="disabled"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款类型</label>
+						<div class="col-sm-6">
+							<select class="form-control" id="loan_type" name="loan_type">
+			                    <option value="">--请选择--</option>
+			                    <option value="1">医疗</option>
+			                    <option value="2">日常消费</option>
+			                    <option value="3">房贷</option>
+			                    <option value="4">其他</option>
+			                </select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款天数</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loan_time" name="loan_time"> 
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="lauch()">发起</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+
+<!-- 修改模态框start -->
+<div class="modal fade" id="updateloan" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">发起贷款</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="yourfrom">
+					<div class="form-group">
+						<label class="col-sm-2 control-label">姓名</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="updateloan_username" disabled="disabled"> 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">身份证号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="updateuser_card"  disabled="disabled"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款金额(元)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="updateloan_money" name="updateloan_money"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">利率(%)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="updateinterest_rate"  disabled="disabled"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款类型</label>
+						<div class="col-sm-6">
+							<select class="form-control" id="updateloan_type" name="updateloan_type">
+			                    <option value="">--请选择--</option>
+			                    <option value="1">医疗</option>
+			                    <option value="2">日常消费</option>
+			                    <option value="3">房贷</option>
+			                    <option value="4">其他</option>
+			                </select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款天数</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="updateloan_time" name="updateloan_time"> 
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="updateLoan()">修改</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+</body>
+</html>

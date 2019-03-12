@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd">
+<mapper namespace="com.rg1803.dao.ShowLoanMapper">
+	<select id="showloan" resultType="AllLoan" parameterType="UserVo">
+		SELECT
+			t.id,
+			t2.realname,
+			t2.idcard,
+			t.loanCode,
+			t.loanSum,
+			t.loanDate,
+			t.loanStartDate,
+			t.loanEndDate,
+			t.loanRate,
+			t.loanDay,
+			t3.type,
+			t.loanstate,
+			t1.state,
+			t2.isemp 
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+		<where>
+			<if test="user.isemp==null">
+				t2.id =#{user.id}
+			</if>
+			<if test="name!=null and !''.equals(name)">
+				and  t2.realname like '%${name}%'
+			</if>
+			<if test="idcard!=null and !''.equals(idcard)">
+				and  t2.idcard like '%${idcard}%'
+			</if>
+			<if test="sel!=null and !''.equals(sel)">
+				and  t.loanstate like '%${sel}%'
+			</if>
+		</where>
+		limit ${pageNumber*pageSize},${pageSize}
+	</select>
+	<select id="loanCount" resultType="integer" parameterType="UserVo">
+		SELECT
+			count(*)
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+		<where>
+			<if test="user.isemp==null">
+				t2.id =#{user.id}
+			</if>
+			<if test="name!=null and !''.equals(name)">
+				and  t2.realname like '%${name}%'
+			</if>
+			<if test="idcard!=null and !''.equals(idcard)">
+				and  t2.idcard like '%${idcard}%'
+			</if>
+			<if test="sel!=null and !''.equals(sel)">
+				and  t.loanstate like '%${sel}%'
+			</if>
+		</where>
+	</select>
+	
+	<select id="haveLoan" resultType="AllLoan" parameterType="User">
+		SELECT
+			t.id,
+			t2.realname,
+			t2.idcard,
+			t.loanCode,
+			t.loanSum,
+			t.loanDate,
+			t.loanStartDate,
+			t.loanEndDate,
+			t.loanRate,
+			t.loanDay,
+			t3.type,
+			t.loanstate,
+			t1.state,
+			t2.isemp,
+			t4.repaystate 
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+			LEFT JOIN t_repayment t4 ON t.id = t4.lid
+			where t2.id=#{id}
+	</select>
+	 
+	<select id="selrate" parameterType="User" resultType="URate">
+		SELECT * from t_user t left join t_user_rate t1 on t.id=t1.uid where t.id=#{id}
+	</select>
+	<select id="selUser" parameterType="User" resultType="User">
+		select * from t_user where realname=#{realname} and idcard=#{idcard}
+	</select>
+	<insert id="addLoan" parameterType="Loan">
+		insert into t_loan(loanSum,loanRate,loanDate,loanDay,uid,loanstate,loantype,loanCode) values(#{loanSum},#{loanRate},#{loanDate},#{loanDay},#{uid},#{loanstate},#{loantype},#{loanCode})
+	</insert>
+	<insert id="addWorkflow" parameterType="Loan">
+		insert into t_workflow(id,lid,state) values(#{id},#{id},0)
+	</insert>
+	<select id="selLoan" parameterType="Loan" resultType="Loan">
+		select * from t_loan where loanCode=#{loanCode}
+	</select>
+	
+	<select id="selLoanById" parameterType="Loan" resultType="Loan">
+		select * from t_loan where id=#{id}
+	</select>
+	<select id="selLoanByUId" parameterType="Loan" resultType="Loan">
+		select * from t_loan <where>uid=#{uid}</where> 
+	</select>
+	<select id="selallLoanByUId" parameterType="Loan" resultType="Loan">
+		select * from t_loan <where>
+								uid=#{uid}
+							</where> 
+	</select>
+	<update id="updateLoan" parameterType="Loan">
+		update  t_loan set loanSum=#{loanSum},loanDay=#{loanDay},loantype=#{loantype} where uid=#{uid}
+	</update>
+	
+	<delete id="delLoan" parameterType="Loan">
+		delete from t_loan where id=#{id}
+	</delete>
+	<delete id="delrepay" parameterType="Repayment">
+		delete from t_repayment where lid=#{lid}
+	</delete>
+	<delete id="delworkflow" parameterType="Loan">
+		delete from t_workflow where lid=#{id}
+	</delete>
+	
+	<select id="selwfn" parameterType="Loan" resultType="WorkFlowNode">
+		SELECT
+			t2.node,
+			t1.lid as wid,
+			t3.nownode
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_loantype t2 ON t2.id = t.loantype 
+			LEFT JOIN t_workflow_node t3 ON t3.wid = t1.id 
+		WHERE
+			t.id =#{id}
+	</select>
+	<insert id="addworkflownode" parameterType="WorkFlowNode">
+		insert into t_workflow_node(node,wid,nownode) values(#{node},#{wid},#{nownode})
+	</insert>
+	<select id="selnode" parameterType="Loan" resultType="LoanType">
+		select * from t_loantype where id=#{loantype}
+	</select>
+	<update id="updateworkflownode" parameterType="LoanType">
+		update t_workflow_node set node=#{node},nownode=#{nownode} where wid=#{wid}
+	</update>
+	<delete id="delworkflownode" parameterType="LoanType">
+		delete from t_workflow_node where wid=#{wid}
+	</delete>
+	<select id="selwk" parameterType="Loan" resultType="WorkFlow">
+		select * from t_workflow where lid=#{id}
+	</select>
+	
+	<select id="selRoleByUser" parameterType="User" resultType="Role">
+		SELECT
+			t2.* 
+		FROM
+			t_user t
+			LEFT JOIN t_user_role t1 ON t.id = t1.uid
+			LEFT JOIN t_role t2 ON t2.id = t1.rid 
+		WHERE
+			t.id =#{id}
+	</select>
+	
+	<select id="selUserbyUid" parameterType="Loan" resultType="User">
+		select * from t_user where id=#{uid}
+	</select>
+	
+	<insert id="addwfl" parameterType="WorkFlowLog">
+		insert into t_workflow_log(workdate,optiontext,wid,spman,sprole) values(#{workdate},#{option},#{wid},#{spman},#{sprole})
+	</insert>
+	<update id="updateloanstateByloanid" parameterType="Loan">
+		update t_loan set loanstate=1 where id=#{id}
+	</update>
+	<update id="updateNownode" parameterType="WorkFlowNode">
+		update t_workflow_node set nownode=#{nownode} where id=#{id}
+	</update>
+	<select id="selWorkFlowNodeByLoan" parameterType="Loan" resultType="WorkFlowNode">
+		SELECT
+			t3.* 
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_loantype t2 ON t2.id = t.loantype
+			LEFT JOIN t_workflow_node t3 ON t3.wid = t1.id 
+		WHERE
+			t.id =#{id}
+	</select>
+	
+	<update id="loanStart" parameterType="Loan">
+		update t_loan set loanStartDate=#{loanStartDate} where id=#{id}
+	</update>
+	<update id="loanEndDay" parameterType="Loan">
+		update t_loan set loanEndDate=#{loanEndDate} where id=#{id}
+	</update>
+	<update id="Loanstate" parameterType="Loan">
+		update t_loan set loanstate=2 where id=#{id}
+	</update>
+	<update id="updateworkflow" parameterType="Loan">
+		update t_workflow set state=2 where lid=#{id}
+	</update>
+	<update id="refuseworkflow" parameterType="Loan">
+		update t_workflow set state=3 where lid=#{id}
+	</update>
+	<select id="showloanBylevel" parameterType="Role" resultType="AllLoan">
+		SELECT
+			t.id,
+			t2.realname,
+			t.loanSum,
+			t.loanDate,
+			t.loanRate,
+			t.loanDay,
+			t3.type,
+			t.loanstate
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_loantype t3 ON t3.id = t.loantype
+	 	where t1.id in<foreach collection="list" item="ls" index="index" open="(" close=")" separator=",">#{ls}</foreach>
+	</select>
+	<select id="selcount" parameterType="Role" resultType="int">
+		select count(*) from t_workflow_node where nownode = #{id};
+	</select>
+	<select id="selLoanbylevel" parameterType="Role" resultType="WorkFlowNode">
+		select * from t_workflow_node where nownode = #{id}
+	</select>
+	
+	<insert id="addRepay" parameterType="Repayment">
+		insert into t_repayment(lid,repaymoney,allsum,repaystate) values(#{lid},#{repaymoney},#{allsum},#{repaystate})
+	</insert>
+	
+	<update id="updateRepay" parameterType="Repayment">
+		update t_repayment set allsum=#{allsum} where lid=#{lid}
+	</update>
+</mapper>

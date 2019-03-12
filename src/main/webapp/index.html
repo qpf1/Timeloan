@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap-table.css" rel="stylesheet">
+<script type="text/javascript" src="./static/js/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap-table.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script type="text/javascript" src="./static/js/common.js"></script>
+<script type="text/javascript" src="static/js/jquery.validate.js"></script>
+
+<script type="text/javascript">
+	//屏幕高度自适应F
+	function changeFrameHeight(){
+	    var ifm= document.getElementById("mainFrame"); 
+	    ifm.height=document.documentElement.clientHeight;
+	
+	}
+	window.onresize=function(){  
+		changeFrameHeight();  
+	}
+	$(function(){
+		$("#mainFrame").attr("frameborder","0");
+		$('[data-hover="dropdown"]').mouseover(function () {
+	        $(this).addClass("open");
+	    });
+
+	    $('[data-hover="dropdown"]').mouseleave(function(){
+	        $(this).removeClass("open");
+	    })
+	    checklogin();
+	    checkSpTask();
+	    checkloginUser();
+	})
+	function checklogin(){
+		$.ajax({
+			url:"./checklogin.action",
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(!data){
+					window.location.href="login.html";
+				}
+			}
+		})
+	}
+	function checkloginUser(){
+		$.ajax({
+			url:"./checkloginUser.action",
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data.bo){
+					if(data.user.realname!=null){
+						$("#loginName").html(data.user.realname);
+					}
+					if(data.role!=null){
+						$("#loginLevel").html(data.role.role);
+					}else{
+						$("#loginLevel").html("用户");
+					}
+				}
+			}
+		})
+	}
+	 var timer = window.setInterval("checkSpTask()",30000);
+	 function checkSpTask(){
+		$.ajax({
+			url:"./spLoan.action",
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				$("#tasknum").html(data.total);
+			},
+			error:function(data){
+				clearInterval(timer);
+			}
+		})
+	} 
+	function zhuxiao(){
+		$.ajax({
+			url:"./zhuxiao.action",
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data){
+					window.location.href="login.html";
+				}
+			}
+		})
+	}
+	
+	function zhuce(){
+		//验证身份证号
+		   jQuery.validator.addMethod("isCard", function (value, element) {
+		     var card = $("#idcard").val();
+		     var pattern = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/;
+		     return pattern.test(card);
+		    }, "请输入正确的身份证号");
+		
+		 //验证手机号
+		     jQuery.validator.addMethod("isPhone", function (value, element) {
+		        var phone = $("#phone").val();
+		        var pattern = /^1[34578]\d{9}$/;
+		        return (pattern.test(phone));
+		      }, "请输入正确的联系人电话");
+		
+		$.ajax({
+			url:"./zhuce.action",
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data){
+					$('#addUser').modal({
+						backdrop:"static"		
+					});	
+					validform();
+				}else{
+					alert("对不起，您没有权限");
+				}
+			}
+		})
+		$("#htmlid").html("<input type='radio' name='role' value='user' checked='checked' onclick='hidePost()' >用户"+
+						  "<input type='radio' name='role' value='staff' onclick='showPost()'>员工");
+	}
+	function validform(){
+		return $("#myform").validate({
+			rules:{
+				realname:{
+					remote:{
+						url:'./verifyName.action',
+						type:'post',
+						dataType:'json',
+						data:{
+							realname:function(){
+								return $("#realname").val();
+							}
+						}
+					},
+					required:true
+				},
+				idcard:{
+					isCard:true,
+					remote:{
+						url:'./verifyIdcard.action',
+						type:'post',
+						dataType:'json',
+						data:{
+							idcard:function(){
+								return $("#idcard").val();
+							}
+						}
+					},
+					required:true
+				},
+				phone:{
+					isPhone:true,
+					remote:{
+						url:'./verifyPhone.action',
+						type:'post',
+						dataType:'json',
+						data:{
+							idcard:function(){
+								return $("#phone").val();
+							}
+						}
+					},
+					required:true
+				},
+				username:{
+					remote:{
+						url:'./verifyUsername.action',
+						type:'post',
+						dataType:'json',
+						data:{
+							idcard:function(){
+								return $("#username").val();
+							}
+						}
+					},
+					required:true
+				}
+			},
+			messages:{
+				realname:{
+					remote:"名字重复",
+	                required:"必填"
+	            },
+				idcard:{
+					isCard:"身份证格式不正确",
+					remote:"身份证重复",
+	                required:"必填"
+	            },
+	            phone:{
+					isCard:"手机号格式不正确",
+					remote:"手机号重复",
+	                required:"必填"
+	            },
+	            username:{
+					remote:"登录账号重复",
+	                required:"必填"
+	            }
+			}
+		})
+	}
+	
+	function showPost(){
+		$("#position").css("display","block");
+	}
+	function hidePost(){
+		$("#position").css("display","none");	
+	}
+	function adduser(){
+		if(validform().form()){
+			$.ajax({
+				url:'./addUser.action',
+				data:{
+					username:$("#username").val(),
+					password:$("#password").val(),
+					idcard:$("#idcard").val(),
+					phone:$("#phone").val(),
+					realname:$("#realname").val(),
+					pos:$("#pos").val(),
+					UOR:$("input[type='radio']:checked").val()
+				},
+				type:"post",
+				dataType:"json",
+				success:function(data){
+					if(data){
+						$("#addUser").modal('hide');
+					}else{
+						alert("您当前职位的权限不足，只有部门经理、总监、董事长有权限添加员工");
+						$("#addUser").modal('hide');
+					}
+					$("#username").val(" ");
+					$("#password").val(" ");
+					$("#idcard").val(" ");
+					$("#phone").val(" ");
+					$("#realname").val(" ");
+					$("#pos").val("");
+					$("#position").css("display","none");
+				}
+			})
+		}
+	}
+	function cancel(){
+		$("#username").val(" ");
+		$("#password").val(" ");
+		$("#idcard").val(" ");
+		$("#phone").val(" ");
+		$("#realname").val(" ");
+		$("#pos").val("");
+		$("#htmlid").html("");
+		$("#position").css("display","none");
+	}
+	
+	function queryParams(params) {  //配置参数
+	    var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+	    	pageNumber: params.pageNumber-1, //页面大小
+	    	pageSize: params.pageSize //页码
+	    };
+	    return temp;
+	}
+	function getLoanList(){
+		$('#table').bootstrapTable({
+			url:'./spLoan.action',// 请求后台的路径
+			method: 'post',//请求方式
+			contentType: "application/x-www-form-urlencoded",
+			pagination: true,//是否分页
+		    sidePagination: "server", //表示服务端请求
+			pagination: true,//是否分页
+			queryParamsType : "",
+			pageNumber: 1,//当前页
+			pageSize: 5,//每页多少
+			queryParams: queryParams,
+		    columns: [ {
+		        field: 'id',
+		        title: '编号',
+		        align:'center'
+		    }, {
+		        field: 'realname',
+		        title: '姓名',
+		        align:'center'
+		    }, {
+		        field: 'loanSum',
+		        title: '贷款金额',
+		        align:'center'
+		    }, {
+		        field: 'loanData',
+		        title: '发起日期',
+		        align:'center'
+		    },{
+		        field: 'loanRate',
+		        title: '利率',
+		        align:'center'
+		    },{
+		        field: 'loanDay',
+		        title: '贷款周期',
+		        align:'center'
+		    },{
+		        field: 'type',
+		        title: '贷款类型',
+		        align:'center'
+		    },{
+		        field: 'state',
+		        title: '审批状态',
+		        align:'center',
+		        formatter:function(value,row,index){
+		        	var ss="<button class='btn-success' onclick='sp("+row.id+")'>审批</button>";
+		        	return ss;
+		        }
+		    }]
+		});
+	}
+	
+	function sploan(){
+		$.ajax({
+			url:'./zhuce.action',
+			data:"post",
+			dataType:"json",
+			success:function(data){
+				if(data){
+					$('#sp').modal({
+						backdrop:"static"		
+					});	
+					getLoanList();	
+				}else{
+					alert("权限不足");
+				}
+			}
+		})
+	}
+	function sp(id){
+		$("#sp").modal('hide');
+		var id=id;
+		$.ajax({
+			url:"./queryLoanTask.action",
+			data:{id:id},
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data.bo){
+					$('#sploan').modal({
+						backdrop:"static"		
+					});
+					$("#loanid").val(data.loan.id);
+					$("#loancode").val(data.loan.loanCode);
+					$("#loanname").val(data.user.realname);
+					$("#loantype").val(data.loan.loantype);
+					$("#loandate").val(data.loan.loansubmitDate);
+					$("#loanmoney").val(data.loan.loanSum);
+					$("#loanrate").val(data.loan.loanRate);
+					$("#loanday").val(data.loan.loanDay);
+				}
+			}
+		})
+	}
+	
+	function spagree(v){
+		if(v==1){
+			$.ajax({
+				url:'./spagree.action',
+				type:"post",
+				data:{
+					id:$("#loanid").val(),
+					option:$("#opinion").val()
+				},
+				dataType:"json",
+				success:function(data){
+					if(data){
+						$("#sploan").modal('hide');
+						$('#table').bootstrapTable('refresh',{
+					    	name:$("#name").val(),
+					    	idcard:$("#idcard").val(),
+							sel:$("#sel").val()})
+						$("#opinion").val("");
+						$('#sp').modal({
+							backdrop:"static"		
+						});
+						$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+					    	pageSize:5})
+					}
+				}
+			})
+		}else if(v==0){
+			$.ajax({
+				url:'./refuse.action',
+				type:"post",
+				data:{
+					id:$("#loanid").val(),
+					option:$("#opinion").val()
+				},
+				dataType:"json",
+				success:function(data){
+					if(data){
+						$("#sploan").modal('hide');
+						$('#table').bootstrapTable('refresh',{
+					    	name:$("#name").val(),
+					    	idcard:$("#idcard").val(),
+							sel:$("#sel").val()})
+						$("#opinion").val("");
+					}
+				}
+			})
+		}
+	}
+	function cs(){
+		sploan();
+	}
+</script>
+</head>
+<body>
+<div class="col-sm-10 col-md-12">
+	<nav class="navbar navbar-default" role="navigation">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="index.html">Time时光理财</a>
+		</div>
+		<div class="navbar-collapse collapse" style="text-align: center;">
+			<ul class="nav navbar-nav" style="display: inline-block;float: none;">
+				<li class="dropdown" data-hover="dropdown">
+					<a href="javaScript:void(0)" class="dropdown-toggle" data-toggle="dropdown">
+						贷款模块
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu">
+						<li><a href="loan.html" target="mainFrame">贷款审批流</a></li>
+						<li class="divider"></li>
+						<li><a href="loanTj.html" target="mainFrame">贷款统计</a></li>
+					</ul>
+				</li>
+				<li class="dropdown" data-hover="dropdown">
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						还款模块
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu">
+						<li><a href="huankuan.html" target="mainFrame">贷款还款</a></li>
+					</ul>
+				</li>
+				<li class="dropdown" data-hover="dropdown">
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						积分模块
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu">
+						<li><a href="jifen.html" target="mainFrame">信誉积分</a></li>
+						<li class="divider"></li>
+						<li><a href="#" target="mainFrame">信誉积分计算</a></li>
+					</ul>
+				</li>
+				<li class="dropdown" data-hover="dropdown">
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						福利优惠
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu">
+						<li><a href="#" target="mainFrame">理财产品</a></li>
+						<li class="divider"></li>
+						<li><a href="#" target="mainFrame">红包</a></li>
+						<li class="divider"></li>
+						<li><a href="#" target="mainFrame">积分活动</a></li>
+					</ul>
+				</li>
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+				<li id="loginName" style="width:50px;height:50px;text-align:center;color:red;line-height:50px;display: inline-block;"></li>
+				<li id="loginLevel" style="width:100px;height:50px;text-align:center;color:red;line-height:50px;display: inline-block;"></li>
+		      <li><a onclick="sploan()" target="mainFrame"><span class="glyphicon glyphicon-envelope"></span> <b id="tasknum"></b></a></li>
+		      <li><a onclick="zhuce()"><span class="glyphicon glyphicon-user"></span> 注册</a></li>
+		      <li><a onclick="zhuxiao()"><span class="glyphicon glyphicon-log-in"></span> 注销</a></li>
+		    </ul>
+		</div>
+	</div>
+	</nav>
+</div>
+<!-- 模态框start -->
+<div class="modal fade" id="sploan" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true" onclick="cs()">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">贷款审批</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" >
+					<div class="form-group">
+						<label class="col-sm-2 control-label">编号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loanid" readonly > 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">流水号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loancode" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款人</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanname" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款类型</label>
+						<div class="col-sm-6">
+							<select class="form-control" id="loantype" disabled="disabled">
+			                    <option>--请选择--</option>
+			                    <option value="1">医疗</option>
+			                    <option value="2">日常消费</option>
+			                    <option value="3">房贷</option>
+			                    <option value="4">其他</option>
+			                </select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">发起日期</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loandate" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款金额(元)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanmoney" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">利率</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanrate" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款周期(天)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loanday" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">审批意见</label>
+						<div class="col-sm-6">
+							<textarea class="form-control" id="opinion"></textarea>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal" onclick="spagree(0)">不同意</button>
+				<button type="button" class="btn btn-primary" onclick="spagree(1)">同意</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+<!--当前有多少审批的模态框 -->
+<div class="modal fade" id="sp" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true" onclick="checkSpTask()">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel" style="text-align: center;">审批贷款</h4>
+			</div>
+			<div class="modal-body">
+				<table id="table" data-row-style="rowStyle"></table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 注册模态框start -->
+<div class="modal fade" id="addUser" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">注册账户</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="myform">
+					<div class="form-group">
+						<label class="col-sm-2 control-label">姓名</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" name="realname" id="realname"> 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">身份证号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" name="idcard" id="idcard" > 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">登录帐号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" name="username" id="username"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">登录密码</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" name="password" id="password" > 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">手机号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" name="phone" id="phone"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">角色</label>
+						<div class="col-sm-6" id="htmlid">
+						</div>
+					</div>
+					<div class="form-group" id="position" style="display:none;">
+						<label class="col-sm-2 control-label">员工职位</label>
+						<div class="col-sm-6">
+							<select class="form-control" id="pos">
+			                    <option value="">--请选择--</option>
+			                    <option value="1">业务组长</option>
+			                    <option value="2">审批组长</option>
+			                    <option value="3">一级部门经理</option>
+			                    <option value="4">一级部门总监</option>
+			                    <option value="5">董事长</option>
+			                    <option value="6">普通员工</option>
+			                </select>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" onclick="cancel()" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="adduser()">注册</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- 正文内容的分隔线 -->
+<div class="col-sm-10 col-md-12">
+	<iframe src="welcome.html" onload="changeFrameHeight()" id="mainFrame" name="mainFrame" width="100%" height="100%"></iframe>
+</div>
+</body>
+</html>

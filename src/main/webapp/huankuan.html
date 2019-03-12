@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="static/bootstrap-3.3.7-dist/css/bootstrap-table.css" rel="stylesheet">
+<script type="text/javascript" src="./static/js/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/js/bootstrap-table.js"></script>
+<script type="text/javascript" src="./static/bootstrap-3.3.7-dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script type="text/javascript" src="./static/js/common.js"></script>
+<script type="text/javascript" src="static/js/jquery.validate.js"></script>
+<script type="text/javascript">
+function hk(id,repaystate){
+	$("#huanloan").modal({
+		backdrop:"static"		
+	});
+	if(repaystate==3){
+		jianfen(id);
+	}
+}
+function queryParams(params) {  //配置参数
+    var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+    	pageNumber: params.pageNumber-1, //页面大小
+    	pageSize: params.pageSize, //页码
+    	name:$("#name").val(),
+    	idcard :$("#idcard").val()
+    };
+    return temp;
+}
+function getLoanHuanList(){
+	$('#table').bootstrapTable({
+		url:'./showRepay.action',// 请求后台的路径
+		method: 'post',//请求方式
+		contentType: "application/x-www-form-urlencoded",
+		pagination: true,//是否分页
+		toolbar: '#toolbar',//工具按钮用哪个容器
+	    sidePagination: "server", //表示服务端请求
+		pagination: true,//是否分页
+		queryParamsType : "",
+		pageNumber: 1,//当前页
+		pageSize: 5,//每页多少
+		queryParams: queryParams,
+	    columns: [ {
+	        field: 'id',
+	        title: '编号',
+	        align:'center'
+	    }, {
+	        field: 'realname',
+	        title: '姓名',
+	        align:'center'
+	    }, {
+	        field: 'idcard',
+	        title: '身份证号',
+	        align:'center'
+	    }, {
+	        field: 'loanCode',
+	        title: '贷款流水号',
+	        align:'center'
+	    }, {
+	        field: 'loanSum',
+	        title: '贷款金额',
+	        align:'center'
+	    }, {
+	        field: 'loanStartData',
+	        title: '贷款开始日期',
+	        align:'center'
+	    },{
+	        field: 'loanRate',
+	        title: '利率',
+	        align:'center'
+	    },{
+	        field: 'allsum',
+	        title: '本息',
+	        align:'center'
+	    },{
+	        field: 'loanDay',
+	        title: '贷款天数',
+	        align:'center'
+	    },{
+	        field: 'type',
+	        title: '贷款类型',
+	        align:'center'
+	    },{
+	        field: 'repaystate',
+	        title: '还款状态',
+	        align:'center',
+	        formatter:function(value,row,index){
+	        	var repaystate = row.repaystate
+	        	var ss= "";
+	        	if(repaystate==0){
+	        		ss="未还款"
+	        	}else if(repaystate ==1){
+	        		ss="未还清"
+	        	}else if(repaystate ==2){	
+	        		ss="已还清"
+	        	}else if(repaystate ==3){	
+	        		ss="逾期"
+	        	}
+	        	return ss;
+	        }
+	    },{
+	        field: 'id',
+	        title: '操作',
+		    align:'center',
+	        formatter:function(value,row,index){
+	        	var ss = "";
+	        	$.ajax({
+        			url:'./cheackemp.action',
+        			type:"post",
+        			dataType:"json",
+        			async:false,
+        			success:function(data){
+        				if(data){
+			        		ss= "<button class='btn btn-default' onclick='tx()'>提醒还款</button>";
+        				}else{
+        					$.ajax({
+        						url:'./cheackmoney.action',
+			        			type:"post",
+			        			dataType:"json",
+			        			async:false,
+			        			success:function(data){
+			        				if(data){
+			        					ss="<button class='btn btn-info glyphicon glyphicon-ok' disabled='disabled'></button>";	
+			        				}else{
+			        					ss = "<button class='btn btn-default' onclick='hk("+row.id+","+row.repaystate+")'>还款</button>";
+			        				}
+			        			}
+        					})
+        				}
+        			}
+        		})
+	        	return ss;	
+	        }
+	    }]
+	});
+}
+$(function(){
+	getLoanHuanList();
+})
+
+function jiafen(id){
+	$.ajax({
+		url:'./addjifen.action',
+		data:{
+			id:id
+		},
+		type:"post",
+		dataType:"json",
+		async:false,
+		success:function(data){
+		}
+	})
+}
+function jianfen(id){
+	$.ajax({
+		url:'./jianjifen.action',
+		data:{
+			id:id
+		},
+		type:"post",
+		dataType:"json",
+		async:false,
+		success:function(data){
+		}
+	})
+}
+function mohu(){
+	$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+    	pageSize:5, //页码
+    	name:$("#name").val(),
+    	idcard:$("#idcard").val()})
+}
+
+function qingkong(){
+	$("#name").val("");
+	$("#idcard").val("");
+	$("#sel").val("");
+	$('#table').bootstrapTable('refresh',{pageNumber:1, //页面大小
+    	pageSize:5, //页码
+    	name:$("#name").val(),
+    	idcard:$("#idcard").val()})
+}
+
+function onclear(v){
+	if(v==0){
+		$("#huanloan").modal('hide');
+		$.ajax({
+			url:'./loanmes.action',
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				$('#loanmes').modal({
+					backdrop:"static"		
+				});
+				$("#loan_username").val(data.realname);
+				$("#loan_id").val(data.id);
+				$("#user_card").val(data.idcard);
+				$("#loansum").val(data.loanSum);
+				$("#allsum").val(data.allsum);
+				$("#interest_rate").val(data.loanRate);
+				$("#loan_time").val(data.loanDay);
+			}
+		})
+	}else if(v==1){
+		$("#huanloan").modal('hide');
+		$.ajax({
+			url:'./verifySum.action',
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data.bo){
+					$('#fenpiloanmes').modal({
+						backdrop:"static"		
+					});
+					$("#loan_usernamef").val(data.loan.realname);
+					$("#user_cardf").val(data.loan.idcard);
+					$("#loansumf").val(data.loan.loanSum);
+					$("#allsumf").val(data.loan.allsum-data.loan.repaymoney);
+					$("#interest_ratef").val(data.loan.loanRate);
+					$("#loan_timef").val(data.loan.loanDay);
+				}else{
+					alert("当前贷款金额小于5000 ，不能申请分期，请选择一次性还款");
+					$('#huanloan').modal("show");
+				}
+			}
+		})
+	}
+}
+
+function sure(){
+	var id=$("#loan_id").val();
+		$.ajax({
+			url:'./huanqian.action',
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data){
+					$("#loanmes").modal('hide');
+					jiafen(id)
+					$('#table').bootstrapTable('refresh',{
+				    	name:$("#name").val(),
+				    	idcard:$("#idcard").val()})
+				}
+			}
+		})
+}
+function validform(){
+	//验证输入金额
+	   jQuery.validator.addMethod("ismoney", function (value, element) {
+		   var money = $("#loan_money").val();
+		   var pattern = /^\d+(\.\d{1,2})?$/;
+		   return pattern.test(money);
+	    }, "请输入正确的贷款金额");
+	
+	   
+	   jQuery.validator.addMethod("amountLimit", function(value, element) {  
+		   var returnVal = true;  
+		   var amountStart = $("#loan_money").val();
+		   var amountEnd = $("#allsumf").val();
+		   if(isNaN(amountEnd) <isNaN(amountStart)){
+			   returnVal = false;
+		   }
+		   return returnVal;   
+	   },"输入金额必须小于需还款金额");
+	
+	var flag = $("#myfrom").validate({
+		rules:{
+			loan_money:{
+				ismoney:true,
+				amountLimit:true,
+				required:true
+			}
+		},
+		messages:{
+			loan_money:{
+				ismoney:"请输入正确的金额",
+				amountLimit:"输入金额必须小于需还款金额",
+                required:"必填"
+            }
+		}
+	})
+	return flag;
+}
+function fenqi(){
+	if(validform().form()){
+		$.ajax({
+			url:'./fenpihuan.action',
+			data:{
+				repaymoney:$("#loan_money").val()
+			},
+			type:"post",
+			dataType:"json",
+			success:function(data){
+				if(data){
+					$("#fenpiloanmes").modal('hide');
+					$('#table').bootstrapTable('refresh',{
+				    	name:$("#name").val(),
+				    	idcard:$("#idcard").val()})
+				    $("#loan_money").val("");
+				}
+			}
+		})
+	}
+}
+</script>
+
+</head>
+<body>
+<ol class="breadcrumb">
+    <li class="active">还款模块</li>
+    <li class="active">贷款还款</li>
+</ol>
+<div class="panel panel-default">
+   <div class="panel-heading">搜索</div>
+    <div class="panel-body">
+        <form role="form" class="form-inline">
+            <div class="form-group">
+                <label for="name">贷款人姓名：</label>
+                <input type="text" class="form-control" id="name" placeholder="贷款人姓名" autocomplete="off">&nbsp;&nbsp;&nbsp;&nbsp;
+                <label class="control-label">贷款人身份证：</label>
+                <input type="text" class="form-control" id="idcard" placeholder="请输入贷款人身份证号" autocomplete="off">&nbsp;&nbsp;&nbsp;&nbsp;
+            </div>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <div class="form-group">
+                <input type="button" class="btn btn-success" onclick="mohu()" value="搜索">
+                <input type="button" class="btn btn-default" onclick="qingkong()" value="清空">
+            </div>
+        </form>
+    </div>
+</div>
+<div class="table-responsive">
+	<table id="table" data-row-style="rowStyle"></table>
+</div>
+<!-- 模态框start -->
+<div class="modal" id="huanloan" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">贷款还款</h4>
+			</div>
+			<div class="modal-body">
+				<b>请你选择一次性还款或者分批次还款</b>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal" onclick="onclear(0)">一次性还款</button>
+				<button type="button" class="btn btn-primary" onclick="onclear(1)">分批还款</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+
+<!-- 模态框start -->
+<div class="modal fade" id="loanmes" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">还款信息</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" >
+					<div class="form-group">
+						<label class="col-sm-2 control-label">id</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loan_id" readonly="readonly"> 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">姓名</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loan_username" readonly="readonly"> 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">身份证号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="user_card"  readonly="readonly"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款金额</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loansum" readonly="readonly"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">需还本息</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="allsum" readonly="readonly"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">利率(%)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="interest_rate"  readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款天数</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loan_time" readonly> 
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="sure()">确定还款</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+<!-- 模态框start -->
+<div class="modal fade" id="fenpiloanmes" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">还款信息</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="myfrom">
+					<div class="form-group">
+						<label class="col-sm-2 control-label">姓名</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loan_usernamef" readonly="readonly"> 
+							<input type="hidden" name="nowcode" id="nowcode"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">身份证号</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="user_cardf"  readonly="readonly"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款金额</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="loansumf" readonly="readonly"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">需还本息</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="allsumf" readonly="readonly"> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">利率(%)</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="interest_ratef"  readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">贷款天数</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loan_timef" readonly> 
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label">还款金额</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control"  id="loan_money" name="loan_money" > 
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="fenqi()">确定还款</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- end -->
+</body>
+</html>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd">
+<mapper namespace="com.rg1803.dao.IntegralMessageMapper">
+	<select id="showjifenlist" parameterType="UserVo" resultType="AllLoan">
+		SELECT
+			t.id,
+			t2.realname,
+			t.loanCode,
+			t4.allsum,
+			t4.repaystate,
+			t3.integral 
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_user_rate t3 ON t3.uid = t2.id
+			LEFT JOIN t_repayment t4 ON t4.lid = t.id 
+		<where>
+			t.loanstate = 2 
+			AND t1.state =2
+			<if test="user.isemp==null">
+				and t2.id =#{user.id}
+			</if>
+			<if test="name!=null and !''.equals(name)">
+				and  t2.realname like '%${name}%'
+			</if>
+			<if test="sel!=null and !''.equals(sel)">
+				and  t4.repaystate like '%${sel}%'
+			</if>
+		</where>
+			limit ${pageNumber*pageSize},${pageSize}
+	</select>
+	
+	<select id="jifencount" parameterType="UserVo" resultType="int">
+		SELECT
+			count(*) 
+		FROM
+			t_loan t
+			LEFT JOIN t_workflow t1 ON t.id = t1.lid
+			LEFT JOIN t_user t2 ON t2.id = t.uid
+			LEFT JOIN t_user_rate t3 ON t3.uid = t2.id
+			LEFT JOIN t_repayment t4 ON t4.lid = t.id 
+		<where>
+			t.loanstate = 2 
+			AND t1.state =2
+			<if test="user.isemp==null">
+				and t2.id =#{user.id}
+			</if>
+			<if test="name!=null and !''.equals(name)">
+				and  t2.realname like '%${name}%'
+			</if>
+			<if test="sel!=null and !''.equals(sel)">
+				and  t4.repaystate like '%${sel}%'
+			</if>
+		</where>
+	</select>
+</mapper>
